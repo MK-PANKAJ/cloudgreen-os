@@ -1,0 +1,33 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "CloudGreen OS Fastify Backend",
+  "type": "module",
+  "main": "src/server.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@digitalbazaar/credentials-context": "^3.2.0",
+    "@digitalbazaar/ed25519-signature-2020": "^5.4.0",
+    "@digitalbazaar/ed25519-verification-key-2020": "^4.2.0",
+    "@digitalbazaar/security-context": "^1.0.1",
+    "@digitalbazaar/vc": "^7.3.0",
+    "@fastify/cors": "^11.2.0",
+    "@opentelemetry/sdk-node": "^0.214.0",
+    "axios": "^1.14.0",
+    "did-jwt": "^8.0.18",
+    "fastify": "^5.8.4",
+    "kafkajs": "^2.2.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
