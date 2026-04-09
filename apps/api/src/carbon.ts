@@ -6,57 +6,62 @@ const kafka = new Kafka({
   brokers: ['127.0.0.1:9092']
 });
 
-// Add the partitioner config here to silence the warning
-const producer = kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner });
+// Configure the producer for reliability: retry policy + acks=-1 (all replicas)
+const producer = kafka.producer({
+  createPartitioner: Partitioners.LegacyPartitioner,
+  retry: {
+    initialRetryTime: 100,
+    retries: 5 // Retry up to 5 times if Kafka is temporarily down
+  }
+});
 
-// The Fallback Estimator using Open-Meteo
+export async function publishCarbonSignal(data: any) {
+  try {
+    await producer.connect();
+    await producer.send({
+      topic: 'carbon-events',
+      acks: -1, // Wait for ALL Kafka replicas to acknowledge (Zero Data Loss)
+      messages: [
+        { value: JSON.stringify({ timestamp: new Date().toISOString(), ...data }) },
+      ],
+    });
+    console.log("📡 [Kafka] Signal reliably published to carbon-events");
+  } catch (error) {
+    console.error("🚨 [Kafka] CRITICAL: Failed to publish signal after 5 retries.", error);
+    // In production: write to fallback database (Postgres) here
+    // For MVP: log and continue
+  } finally {
+    await producer.disconnect();
+  }
+}
+
+// apps/api/src/carbon.ts
 export async function getEstimatedCarbonIntensity(lat: number, lon: number) {
   try {
-    const res = await axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m`, {
-      timeout: 5000,
-    });
-    const { temperature_2m, wind_speed_10m } = res.data.current;
+    // Public live carbon intensity feed with no API key required.
+    // This keeps the dashboard API-only and avoids synthetic fallback data.
+    const res = await axios.get('https://api.carbonintensity.org.uk/intensity', { timeout: 5000 });
+    const current = res.data?.data?.[0]?.intensity;
+    const intensity = Number(current?.actual ?? current?.forecast);
 
-    // Baseline calculation (Simulated estimation)
-    let intensity = 300; // base gCO2eq/kWh
-    
-    // Wind boost (reduces intensity)
-    if (wind_speed_10m > 15) intensity -= 80;
-    
-    // Cooling/Heating penalty (increases intensity)
-    if (temperature_2m > 30 || temperature_2m < 5) intensity += 100;
+    if (!Number.isFinite(intensity)) {
+      throw new Error('Carbon Intensity API returned an invalid intensity value');
+    }
 
-    // Determine Operational Mode
     let mode = 'Balanced';
     if (intensity <= 220) mode = 'Green';
     else if (intensity >= 500) mode = 'Critical';
     else if (intensity > 360) mode = 'Defer';
 
-    return { intensity, mode, wind_speed_10m, temperature_2m, source: 'open-meteo' };
-  } catch (error) {
-    // Keep the API operational even if the weather provider is unavailable.
-    const fallbackWind = 8;
-    const fallbackTemp = 22;
-    const intensity = 300;
-    const mode = 'Balanced';
-
     return {
-      intensity,
+      intensity: Math.round(intensity),
       mode,
-      wind_speed_10m: fallbackWind,
-      temperature_2m: fallbackTemp,
-      source: 'local-fallback',
+      wind_speed_10m: 'N/A',
+      temperature_2m: 'N/A',
+      source: 'Carbon Intensity API (uk)',
     };
+  } catch (error) {
+    console.error('Carbon Intensity API request failed', error);
+    throw new Error('Live carbon API unavailable');
   }
-}
-
-export async function publishCarbonSignal(data: any) {
-  await producer.connect();
-  await producer.send({
-    topic: 'carbon-events',
-    messages: [
-      { value: JSON.stringify({ timestamp: new Date().toISOString(), ...data }) },
-    ],
-  });
-  await producer.disconnect();
 }

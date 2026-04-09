@@ -1,30 +1,37 @@
-"use client";
 
-import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { getServerSession } from "next-auth";
+import { CarbonDashboard } from '../components/CarbonDashboard';
 
-export default function Page() {
-  const [healthStatus, setHealthStatus] = useState<string>('Connecting to API...');
-
-  useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        const response = await axios.get('http://127.0.0.1:8787/health');
-        setHealthStatus(`${response.data.status} at ${response.data.timestamp}`);
-      } catch (error) {
-        setHealthStatus('❌ Failed to connect to API');
-      }
-    };
-
-    checkHealth();
-  }, []);
+export default async function Page() {
+  const session = await getServerSession();
 
   return (
-    <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>🌱 CloudGreen OS Dashboard</h1>
-      <div style={{ padding: '1rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', marginTop: '1rem' }}>
-        <strong>Backend Status:</strong> {healthStatus}
-      </div>
-    </main>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+      <header style={{ backgroundColor: '#111827', color: 'white', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0, fontSize: '1.25rem' }}>🌱 CloudGreen OS</h1>
+        
+        {/* Auth UI */}
+        <div>
+          {session ? (
+            <span style={{ color: '#86efac' }}>Logged in as {session.user?.name || 'Enterprise Admin'}</span>
+          ) : (
+            <a href="/api/auth/signin/keycloak" style={{ backgroundColor: '#22c55e', padding: '0.5rem 1rem', borderRadius: '6px', color: 'white', textDecoration: 'none' }}>
+              Enterprise Login
+            </a>
+          )}
+        </div>
+      </header>
+      
+      <main>
+        {session ? (
+          <CarbonDashboard />
+        ) : (
+          <div style={{ padding: '4rem', textAlign: 'center' }}>
+            <h2>Enterprise Access Restricted</h2>
+            <p>Please log in with your Keycloak credentials to view telemetry.</p>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

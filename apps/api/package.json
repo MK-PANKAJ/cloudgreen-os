@@ -6,7 +6,8 @@
   "main": "src/server.ts",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "start": "tsx src/server.ts"
+    "start": "tsx src/server.ts",
+    "circuit:compile": "circom circuits/EmissionRangeProof.circom --r1cs --wasm --sym"
   },
   "keywords": [],
   "author": "",
@@ -18,11 +19,21 @@
     "@digitalbazaar/security-context": "^1.0.1",
     "@digitalbazaar/vc": "^7.3.0",
     "@fastify/cors": "^11.2.0",
+    "@fastify/jwt": "^10.0.0",
     "@opentelemetry/sdk-node": "^0.214.0",
     "axios": "^1.14.0",
+    "bullmq": "^5.73.0",
+    "circomlib": "^2.0.5",
     "did-jwt": "^8.0.18",
+    "ethers": "^6.16.0",
     "fastify": "^5.8.4",
+    "graphql": "^16.13.2",
+    "graphql-yoga": "^5.21.0",
+    "ioredis": "^5.10.1",
     "kafkajs": "^2.2.4",
+    "neo4j-driver": "^6.0.1",
+    "next-auth": "^4.24.13",
+    "snarkjs": "^0.7.6",
     "zod": "^4.3.6"
   },
   "devDependencies": {
